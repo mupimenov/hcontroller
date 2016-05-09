@@ -1,0 +1,9 @@
+*.map
+*~
+*.o
+*.d
+*.elf
+*.hex
+*.eep
+Release/*
+*.ar
