@@ -96,6 +96,15 @@ struct dallas_temperature_ioslot
 	uint8_t pin;
 };
 
+struct mh_z18_ioslot
+{
+	uint8_t driver;
+	uint8_t id;
+
+	uint8_t receive_pin;
+	uint8_t transmit_pin;
+};
+
 struct abstract_ioslot
 {	
 	union {
@@ -105,6 +114,7 @@ struct abstract_ioslot
 		struct discrete_output_ioslot 		discrete_output;
 		struct dhtxx_ioslot 				dhtxx;
 		struct dallas_temperature_ioslot 	dallas_temperature;
+		struct mh_z18_ioslot 				mh_z19;
 	} data;
 };
 
@@ -115,7 +125,8 @@ enum ioslot_driver
 	DISCRETE_INPUT_DRIVER,
 	DISCRETE_OUTPUT_DRIVER,
 	DHTxx_DRIVER,
-	DALLAS_TEMPERATURE_DRIVER
+	DALLAS_TEMPERATURE_DRIVER,
+	MH_Z19_DRIVER
 };
 
 #define ioslot_driver(s) ((s)->data.common.driver)

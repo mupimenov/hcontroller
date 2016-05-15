@@ -8,6 +8,7 @@
 #include "scmRTOS.h"
 #include "DHT.h"
 #include "OneWire.h"
+#include "MH_Z19.h"
 
 #include "config.h"
 
@@ -59,7 +60,8 @@ struct dhtxx_state
 	
 	uint8_t modification;
 	uint8_t parameter;
-	uint8_t pin;	
+	uint8_t pin;
+	uint8_t unstable_counter;
 	uint32_t last_millis;
 	float value;
 };
@@ -70,6 +72,18 @@ struct dallas_temperature_state
 	uint8_t id;
 	
 	uint8_t pin;
+	uint32_t last_millis;
+	float value;
+};
+
+struct mh_z19_state
+{
+	uint8_t driver;
+	uint8_t id;
+
+	uint8_t receive_pin;
+	uint8_t transmit_pin;
+	uint8_t unstable_counter;
 	uint32_t last_millis;
 	float value;
 };
@@ -87,6 +101,7 @@ struct abstract_ioslot_state
 		struct discrete_output_state 	discrete_output;
 		struct dhtxx_state 				dhtxx;
 		struct dallas_temperature_state dallas_temperature;
+		struct mh_z19_state 			mh_z19;
 	} data;
 };
 
@@ -369,6 +384,7 @@ static bool prepare_dhtxx(struct abstract_ioslot_state *state, struct abstract_i
 	state->data.dhtxx.parameter = ioslot->data.dhtxx.parameter;
 	state->data.dhtxx.pin = ioslot->data.dhtxx.pin;
 	
+	state->data.dhtxx.last_millis = 0;
 	state->data.dhtxx.value = NAN;
 	
 	return true;
@@ -401,7 +417,8 @@ static void get_dhtxx_values(void)
 	bool dhtxx_requested = false;
 
 	static uint8_t dhtxx_next_num = 0;
-	static const uint32_t dhtxx_period = 2000UL;
+	static const uint32_t dhtxx_period = 2500UL;
+	static const uint8_t unstable_max_count = 3;
 
 	for (i = 0; i < IOSLOTS_COUNT; ++i)
 	{
@@ -422,7 +439,18 @@ static void get_dhtxx_values(void)
 					float temperature = dht.readTemperature();
 					float humidity = dht.readHumidity();
 
-					update_dhtxx_state(pin, now, temperature, humidity);
+					if (isnan(temperature) || isnan(humidity))
+					{
+						if (ioslot_state[i].data.dhtxx.unstable_counter < unstable_max_count)
+							++ioslot_state[i].data.dhtxx.unstable_counter;
+						else
+							update_dhtxx_state(pin, now, temperature, humidity);
+					}
+					else
+					{
+						ioslot_state[i].data.dhtxx.unstable_counter = 0;
+						update_dhtxx_state(pin, now, temperature, humidity);
+					}
 
 					dhtxx_requested = true;
 					dhtxx_next_num = i + 1;
@@ -477,6 +505,7 @@ static bool prepare_dallas_temperature(struct abstract_ioslot_state *state, stru
 	state->data.dallas_temperature.id = ioslot->data.dallas_temperature.id;
 	state->data.dallas_temperature.pin = ioslot->data.dallas_temperature.pin;
 	
+	state->data.dallas_temperature.last_millis = 0;
 	state->data.dallas_temperature.value = NAN;
 	
 	return true;
@@ -499,10 +528,10 @@ static void get_dallas_values(void)
 				uint32_t now = millis();
 				uint32_t last_millis = ioslot_state[i].data.dallas_temperature.last_millis;
 				
-				if (last_millis + dallas_period > now
+				if (now > last_millis + dallas_period
 					|| now < last_millis)
 				{
-					OneWire  ds(ioslot_state[i].data.dallas_temperature.pin);
+					OneWire ds(ioslot_state[i].data.dallas_temperature.pin);
 					byte data[2];
 					ds.reset();
 					ds.write(0xCC);
@@ -533,6 +562,108 @@ static void get_dallas_values(void)
 	}
 }
 
+/* MH-Z19 */
+
+static void mh_z19_execute(struct abstract_ioslot_state *state, struct abstract_ioslot *ioslot, uint8_t mode)
+{
+	if (mode == IN)
+	{
+
+	}
+}
+
+static void mh_z19_io_discrete(struct abstract_ioslot_state *state, uint8_t mode, uint8_t *value)
+{
+	if (mode == IN)
+	{
+		*value = 0;
+	}
+}
+
+static void mh_z19_io_analog(struct abstract_ioslot_state *state, uint8_t mode, float *value)
+{
+	if (mode == IN)
+	{
+		*value = state->data.mh_z19.value;
+	}
+}
+
+static bool prepare_mh_z19(struct abstract_ioslot_state *state, struct abstract_ioslot *ioslot)
+{
+	if (ioslot->data.common.driver != MH_Z19_DRIVER)
+		return false;
+
+	state->execute = mh_z19_execute;
+	state->io_discrete = mh_z19_io_discrete;
+	state->io_analog = mh_z19_io_analog;
+
+	state->data.mh_z19.driver = ioslot->data.mh_z19.driver;
+	state->data.mh_z19.id = ioslot->data.mh_z19.id;
+
+	state->data.mh_z19.receive_pin = ioslot->data.mh_z19.receive_pin;
+	state->data.mh_z19.transmit_pin = ioslot->data.mh_z19.transmit_pin;
+	state->data.mh_z19.last_millis = 0;
+	state->data.mh_z19.value = NAN;
+
+	return true;
+}
+
+static void get_mh_z19_values(void)
+{
+	uint8_t i;
+	bool mh_z19_requested = false;
+
+	static uint8_t mh_z19_next_num = 0;
+	static const uint32_t mh_z19_period = 10000L;
+	static const uint8_t unstable_max_count = 3;
+
+	for (i = 0; i < IOSLOTS_COUNT; ++i)
+	{
+		if (ioslot_state[i].data.common.driver == MH_Z19_DRIVER)
+		{
+			if (i >= mh_z19_next_num)
+			{
+				uint32_t now = millis();
+				uint32_t last_millis = ioslot_state[i].data.mh_z19.last_millis;
+
+				if (now > last_millis + mh_z19_period
+					|| now < last_millis)
+				{
+					MH_Z19 m(ioslot_state[i].data.mh_z19.receive_pin, ioslot_state[i].data.mh_z19.transmit_pin);
+					m.begin();
+					float co2 = m.read();
+					if (isnan(co2))
+					{
+						if (ioslot_state[i].data.mh_z19.unstable_counter < unstable_max_count)
+							++ioslot_state[i].data.mh_z19.unstable_counter;
+						else
+						{
+							ioslot_state[i].data.mh_z19.last_millis = now;
+							ioslot_state[i].data.mh_z19.value = co2;
+						}
+					}
+					else
+					{
+						ioslot_state[i].data.mh_z19.unstable_counter = 0;
+
+						ioslot_state[i].data.mh_z19.last_millis = now;
+						ioslot_state[i].data.mh_z19.value = co2;
+					}
+
+					mh_z19_requested = true;
+					mh_z19_next_num = i + 1;
+					break;
+				}
+			}
+		}
+	}
+
+	if (!mh_z19_requested)
+	{
+		mh_z19_next_num = 0;
+	}
+}
+
 static bool prepare_empty_slot(struct abstract_ioslot_state *state, struct abstract_ioslot *ioslot)
 {	
 	state->execute = NULL;
@@ -553,6 +684,7 @@ static const prep_ioslot_fn  prepare_ioslot[] = {
 	prepare_discrete_output,
 	prepare_dhtxx,
 	prepare_dallas_temperature,
+	prepare_mh_z19,
 	
 	prepare_empty_slot
 };
@@ -603,6 +735,7 @@ void io_execute_in(void)
 	
 		get_dhtxx_values();
 		get_dallas_values();
+		get_mh_z19_values();
 	}
 	io_unlock();
 }

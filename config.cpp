@@ -122,6 +122,19 @@ static bool dallas_temperature_parser(uint8_t *arr, struct abstract_ioslot *iosl
 	return true;
 }
 
+static bool mh_z19_parser(uint8_t *arr, struct abstract_ioslot *ioslot)
+{
+	if (arr[0] != MH_Z19_DRIVER)
+		return false;
+
+	ioslot->data.mh_z19.driver = arr[0];
+	ioslot->data.mh_z19.id = arr[1];
+	ioslot->data.mh_z19.receive_pin = arr[2];
+	ioslot->data.mh_z19.transmit_pin = arr[3];
+
+	return true;
+}
+
 static bool empty_slot_parser(uint8_t *arr, struct abstract_ioslot *ioslot)
 {	
 	ioslot->data.common.driver = EMPTY_SLOT_DRIVER;
@@ -138,6 +151,8 @@ static const ioslot_parser_fn ioslot_parser[] = {
 	discrete_output_parser,
 	dhtxx_parser,
 	dallas_temperature_parser,
+	mh_z19_parser,
+
 	empty_slot_parser
 };
 
