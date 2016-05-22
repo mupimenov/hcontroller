@@ -13,6 +13,7 @@
 #include "datetime.h"
 
 #include "modbus.h"
+#include "version.h"
 
 #define MODBUS_ADDRESS 0x01
 
@@ -80,7 +81,7 @@ static int modbus_write(struct modbus_instance *instance, const uint8_t *packet,
 	MODBUS_RETURN(instance, MODBUS_SUCCESS);
 }
 
-#define ELEMENT_OFFSET(__table__, __var__) ((uint8_t*)(&(__table__)) - (uint8_t*)(&(__table__).__var__))
+#define ELEMENT_OFFSET(__table__, __var__) ((uint8_t*)(&(__table__).__var__) - (uint8_t*)(&(__table__)))
 #define ELEMENT_IN(__start__, __offset__,__address__, __count__) ((__start__ + __offset__) >= (__address__) && (__start__ + __offset__) <= (__address__ + __count__))
 
 static int modbus_after_write_table(struct modbus_instance *instance, enum modbus_table table, uint16_t address, uint16_t count)
@@ -88,21 +89,26 @@ static int modbus_after_write_table(struct modbus_instance *instance, enum modbu
 	if (table == MODBUS_TABLE_HOLDING_REGISTERS)
 	{
 		uint16_t offset = ELEMENT_OFFSET(common_values, now);
-		if (ELEMENT_IN(0x0000, offset, address, count))
+		if (ELEMENT_IN(0x0000, offset, address * 2, count * 2))
 		{
 			// SYNC CLOCK
 			DateTime dt(common_values.now.year, common_values.now.month, common_values.now.day,
 					common_values.now.hours, common_values.now.minutes, common_values.now.seconds);
 
+			OS::TSysTimerLocker lock;
 			RTC_DS1307 rtc;
 			rtc.begin();
 			rtc.adjust(dt);
 		}
 
 		offset = ELEMENT_OFFSET(common_values, modbus_address);
-		if (ELEMENT_IN(0x0000, offset, address, count))
+		if (ELEMENT_IN(0x0000, offset, address * 2, count * 2))
 		{
+			config_lock();
 			config_set_address(common_values.modbus_address & 0xFF);
+			config_unlock();
+
+			// instance->address = common_values.modbus_address;
 		}
 	}
 	
@@ -276,7 +282,7 @@ void link_init(void)
 	modbus.send_buffer = send_buffer;
 	modbus.send_buffer_size = LINK_PACKET_SIZE;
 
-	modbus.id = (uint8_t*)"HPONIC";
+	modbus.id = (uint8_t*)("HPONIC-" VERSION);
 
 	modbus.coil_tables = coil_tables;
 	modbus.discrete_tables = NULL;
