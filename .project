@@ -37,6 +37,11 @@
 			<locationURI>ArduinoHardwareLibPath/EEPROM</locationURI>
 		</link>
 		<link>
+			<name>Libraries/I2cMaster</name>
+			<type>2</type>
+			<locationURI>ArduinoPrivateLibPath/I2cMaster</locationURI>
+		</link>
+		<link>
 			<name>Libraries/Modbus</name>
 			<type>2</type>
 			<locationURI>ArduinoPrivateLibPath/Modbus</locationURI>
@@ -50,6 +55,11 @@
 			<name>Libraries/RTClib</name>
 			<type>2</type>
 			<locationURI>ArduinoPrivateLibPath/RTClib</locationURI>
+		</link>
+		<link>
+			<name>Libraries/SHT2x-Arduino-Library-master</name>
+			<type>2</type>
+			<locationURI>ArduinoPrivateLibPath/SHT2x-Arduino-Library-master</locationURI>
 		</link>
 		<link>
 			<name>Libraries/SoftwareSerial</name>

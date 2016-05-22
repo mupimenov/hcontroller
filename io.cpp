@@ -7,7 +7,8 @@
 #include "Arduino.h"
 #include "scmRTOS.h"
 #include "DHT.h"
-#include "OneWire.h"
+#include "SHT2x.h"
+#include "Dallas.h"
 #include "MH_Z19.h"
 
 #include "config.h"
@@ -72,6 +73,8 @@ struct dallas_temperature_state
 	uint8_t id;
 	
 	uint8_t pin;
+	uint8_t family_code;
+	uint8_t unstable_counter;
 	uint32_t last_millis;
 	float value;
 };
@@ -83,6 +86,19 @@ struct mh_z19_state
 
 	uint8_t receive_pin;
 	uint8_t transmit_pin;
+	uint8_t unstable_counter;
+	uint32_t last_millis;
+	float value;
+};
+
+struct sht2x_state
+{
+	uint8_t driver;
+	uint8_t id;
+
+	uint8_t parameter;
+	uint8_t sda_pin;
+	uint8_t scl_pin;
 	uint8_t unstable_counter;
 	uint32_t last_millis;
 	float value;
@@ -102,6 +118,7 @@ struct abstract_ioslot_state
 		struct dhtxx_state 				dhtxx;
 		struct dallas_temperature_state dallas_temperature;
 		struct mh_z19_state 			mh_z19;
+		struct sht2x_state 				sht2x;
 	} data;
 };
 
@@ -505,6 +522,8 @@ static bool prepare_dallas_temperature(struct abstract_ioslot_state *state, stru
 	state->data.dallas_temperature.id = ioslot->data.dallas_temperature.id;
 	state->data.dallas_temperature.pin = ioslot->data.dallas_temperature.pin;
 	
+	state->data.dallas_temperature.family_code = UNKNOWN_VALUE;
+	state->data.dallas_temperature.unstable_counter = 0;
 	state->data.dallas_temperature.last_millis = 0;
 	state->data.dallas_temperature.value = NAN;
 	
@@ -517,7 +536,8 @@ static void get_dallas_values(void)
 	bool dallas_requested = false;
 	
 	static uint8_t dallas_next_num = 0;
-	static const uint32_t dallas_period = 1000L;
+	static const uint32_t dallas_period = 2000L;
+	static const uint8_t unstable_max_count = 3;
 	
 	for (i = 0; i < IOSLOTS_COUNT; ++i)
 	{
@@ -531,22 +551,26 @@ static void get_dallas_values(void)
 				if (now > last_millis + dallas_period
 					|| now < last_millis)
 				{
-					OneWire ds(ioslot_state[i].data.dallas_temperature.pin);
-					byte data[2];
-					ds.reset();
-					ds.write(0xCC);
-					ds.write(0xBE);
-					data[0] = ds.read();
-					data[1] = ds.read();
+					Dallas d(ioslot_state[i].data.dallas_temperature.pin);
+					float temperature = d.getTemperature();
 
-					int temperature = (data[1]<< 8) + data[0];
-					
-					ds.reset();
-					ds.write(0xCC);
-					ds.write(0x44);
+					if (isnan(temperature))
+					{
+						if (ioslot_state[i].data.dallas_temperature.unstable_counter < unstable_max_count)
+							++ioslot_state[i].data.dallas_temperature.unstable_counter;
+						else
+						{
+							ioslot_state[i].data.dallas_temperature.last_millis = now;
+							ioslot_state[i].data.dallas_temperature.value = temperature;
+						}
+					}
+					else
+					{
+						ioslot_state[i].data.dallas_temperature.unstable_counter = 0;
 
-					ioslot_state[i].data.dallas_temperature.last_millis = now;
-					ioslot_state[i].data.dallas_temperature.value = (float)temperature * 0.0625f;
+						ioslot_state[i].data.dallas_temperature.last_millis = now;
+						ioslot_state[i].data.dallas_temperature.value = temperature;
+					}
 					
 					dallas_requested = true;
 					dallas_next_num = i + 1;
@@ -664,6 +688,113 @@ static void get_mh_z19_values(void)
 	}
 }
 
+/* SHT-2x */
+
+static void sht2x_execute(struct abstract_ioslot_state *state, struct abstract_ioslot *ioslot, uint8_t mode)
+{
+	if (mode == IN)
+	{
+
+	}
+}
+
+static void sht2x_io_discrete(struct abstract_ioslot_state *state, uint8_t mode, uint8_t *value)
+{
+	if (mode == IN)
+	{
+		*value = 0;
+	}
+}
+
+static void sht2x_io_analog(struct abstract_ioslot_state *state, uint8_t mode, float *value)
+{
+	if (mode == IN)
+	{
+		*value = state->data.mh_z19.value;
+	}
+}
+
+static bool prepare_sht2x(struct abstract_ioslot_state *state, struct abstract_ioslot *ioslot)
+{
+	if (ioslot->data.common.driver != SHT2X_DRIVER)
+		return false;
+
+	state->execute = sht2x_execute;
+	state->io_discrete = sht2x_io_discrete;
+	state->io_analog = sht2x_io_analog;
+
+	state->data.sht2x.driver = ioslot->data.sht2x.driver;
+	state->data.sht2x.id = ioslot->data.sht2x.id;
+
+	state->data.sht2x.parameter = ioslot->data.sht2x.parameter;
+	state->data.sht2x.sda_pin = ioslot->data.sht2x.sda_pin;
+	state->data.sht2x.scl_pin = ioslot->data.sht2x.scl_pin;
+	state->data.sht2x.last_millis = 0;
+	state->data.sht2x.value = NAN;
+
+	return true;
+}
+
+static void get_sht2x_values(void)
+{
+	uint8_t i;
+	bool sht2x_requested = false;
+
+	static uint8_t sht2x_next_num = 0;
+	static const uint32_t sht2x_period = 2000L;
+	static const uint8_t unstable_max_count = 3;
+
+	for (i = 0; i < IOSLOTS_COUNT; ++i)
+	{
+		if (ioslot_state[i].data.common.driver == SHT2X_DRIVER)
+		{
+			if (i >= sht2x_next_num)
+			{
+				uint32_t now = millis();
+				uint32_t last_millis = ioslot_state[i].data.sht2x.last_millis;
+
+				if (now > last_millis + sht2x_period
+					|| now < last_millis)
+				{
+					SHT2xClass sht2x(ioslot_state[i].data.sht2x.sda_pin, ioslot_state[i].data.sht2x.scl_pin);
+					float data;
+					if (ioslot_state[i].data.sht2x.parameter == SHT2X_TEMPERATURE)
+						data = sht2x.GetTemperature();
+					else
+						data = sht2x.GetHumidity();
+
+					if (isnan(data))
+					{
+						if (ioslot_state[i].data.sht2x.unstable_counter < unstable_max_count)
+							++ioslot_state[i].data.sht2x.unstable_counter;
+						else
+						{
+							ioslot_state[i].data.sht2x.last_millis = now;
+							ioslot_state[i].data.sht2x.value = data;
+						}
+					}
+					else
+					{
+						ioslot_state[i].data.sht2x.unstable_counter = 0;
+
+						ioslot_state[i].data.sht2x.last_millis = now;
+						ioslot_state[i].data.sht2x.value = data;
+					}
+
+					sht2x_requested = true;
+					sht2x_next_num = i + 1;
+					break;
+				}
+			}
+		}
+	}
+
+	if (!sht2x_requested)
+	{
+		sht2x_next_num = 0;
+	}
+}
+
 static bool prepare_empty_slot(struct abstract_ioslot_state *state, struct abstract_ioslot *ioslot)
 {	
 	state->execute = NULL;
@@ -685,6 +816,7 @@ static const prep_ioslot_fn  prepare_ioslot[] = {
 	prepare_dhtxx,
 	prepare_dallas_temperature,
 	prepare_mh_z19,
+	prepare_sht2x,
 	
 	prepare_empty_slot
 };
@@ -736,6 +868,7 @@ void io_execute_in(void)
 		get_dhtxx_values();
 		get_dallas_values();
 		get_mh_z19_values();
+		get_sht2x_values();
 	}
 	io_unlock();
 }

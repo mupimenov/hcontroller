@@ -6,6 +6,8 @@
 
 #include "scmRTOS_Arduino.h"
 
+#define ADDRESS_ADDRESS 0xFFF
+
 static OS::TMutex 		mutex;
 
 void config_init(void)
@@ -135,6 +137,22 @@ static bool mh_z19_parser(uint8_t *arr, struct abstract_ioslot *ioslot)
 	return true;
 }
 
+static bool sht2x_parser(uint8_t *arr, struct abstract_ioslot *ioslot)
+{
+	if (arr[0] != SHT2X_DRIVER)
+		return false;
+
+	ioslot->data.sht2x.driver = arr[0];
+	ioslot->data.sht2x.id = arr[1];
+
+	ioslot->data.sht2x.parameter = arr[2];
+
+	ioslot->data.sht2x.sda_pin = arr[3];
+	ioslot->data.sht2x.scl_pin = arr[4];
+
+	return true;
+}
+
 static bool empty_slot_parser(uint8_t *arr, struct abstract_ioslot *ioslot)
 {	
 	ioslot->data.common.driver = EMPTY_SLOT_DRIVER;
@@ -152,6 +170,7 @@ static const ioslot_parser_fn ioslot_parser[] = {
 	dhtxx_parser,
 	dallas_temperature_parser,
 	mh_z19_parser,
+	sht2x_parser,
 
 	empty_slot_parser
 };
@@ -366,4 +385,14 @@ uint8_t program_count_with_output(uint8_t id)
 	}
 	
 	return count;
+}
+
+void config_set_address(uint8_t address)
+{
+	EEPROM.write(ADDRESS_ADDRESS, address);
+}
+
+uint8_t config_get_address(void)
+{
+	return EEPROM.read(ADDRESS_ADDRESS);
 }

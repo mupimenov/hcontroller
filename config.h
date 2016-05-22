@@ -105,6 +105,23 @@ struct mh_z18_ioslot
 	uint8_t transmit_pin;
 };
 
+struct sht2x_ioslot
+{
+	uint8_t driver;
+	uint8_t id;
+
+	uint8_t parameter;
+
+	uint8_t sda_pin;
+	uint8_t scl_pin;
+};
+
+enum sht2x_parameter
+{
+	SHT2X_TEMPERATURE,
+	SHT2X_HUMIDITY
+};
+
 struct abstract_ioslot
 {	
 	union {
@@ -115,6 +132,7 @@ struct abstract_ioslot
 		struct dhtxx_ioslot 				dhtxx;
 		struct dallas_temperature_ioslot 	dallas_temperature;
 		struct mh_z18_ioslot 				mh_z19;
+		struct sht2x_ioslot					sht2x;
 	} data;
 };
 
@@ -126,7 +144,8 @@ enum ioslot_driver
 	DISCRETE_OUTPUT_DRIVER,
 	DHTxx_DRIVER,
 	DALLAS_TEMPERATURE_DRIVER,
-	MH_Z19_DRIVER
+	MH_Z19_DRIVER,
+	SHT2X_DRIVER
 };
 
 #define ioslot_driver(s) ((s)->data.common.driver)
@@ -244,6 +263,9 @@ void config_unlock(void);
 
 void config_read(uint16_t address, uint8_t *data, uint16_t size);
 void config_write(uint16_t address, const uint8_t *data, uint16_t size);
+
+void config_set_address(uint8_t address);
+uint8_t config_get_address(void);
 
 #ifdef __cplusplus
 }

@@ -43,6 +43,7 @@ static struct common_hold_reg {
 	struct datetime now;
 	uint16_t dummy;
 	uint32_t uptime;
+	uint16_t modbus_address;
 } 									common_values;
 
 static const struct modbus_regs_table holding_tables[] = {
@@ -96,6 +97,12 @@ static int modbus_after_write_table(struct modbus_instance *instance, enum modbu
 			RTC_DS1307 rtc;
 			rtc.begin();
 			rtc.adjust(dt);
+		}
+
+		offset = ELEMENT_OFFSET(common_values, modbus_address);
+		if (ELEMENT_IN(0x0000, offset, address, count))
+		{
+			config_set_address(common_values.modbus_address & 0xFF);
 		}
 	}
 	
@@ -233,6 +240,7 @@ static void update_inputs(void)
 
 	common_values.now = datetime_now();
 	common_values.uptime = millis();
+	common_values.modbus_address = config_get_address();
 }
 
 void link(void)
@@ -250,12 +258,19 @@ void link(void)
 
 void link_init(void)
 {
+	uint8_t address;
+
 	Serial.begin(9600);
 	Serial.setTimeout(0);
 	Serial.setPacketTimeout(10);
 
 	modbus.arg = NULL;
-	modbus.address = MODBUS_ADDRESS;
+
+	address = config_get_address();
+	if (address < 1 || address > 247)
+		address = MODBUS_ADDRESS;
+
+	modbus.address = address;
 	modbus.recv_buffer = recv_buffer;
 	modbus.recv_buffer_size = LINK_PACKET_SIZE;
 	modbus.send_buffer = send_buffer;
