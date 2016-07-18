@@ -290,6 +290,7 @@ static void discrete_output_execute(struct abstract_ioslot_state *state, struct 
 {
 	if (mode == OUT)
 	{
+		uint8_t output;
 		if (ioslot->data.discrete_output.operation == OPERATION_OR)
 		{
 			state->data.discrete_output.value = state->data.discrete_output.count? ON: OFF;
@@ -300,13 +301,13 @@ static void discrete_output_execute(struct abstract_ioslot_state *state, struct 
 			state->data.discrete_output.value 
 				= (state->data.discrete_output.count == max_count) ? ON: OFF;
 		}
-		
+		output = state->data.discrete_output.value;
 		// INVERSE?
 		if (ioslot->data.discrete_output.inverse)
-			state->data.discrete_output.value = state->data.discrete_output.value == ON? OFF: ON;
+			output = output == ON? OFF: ON;
 		
 		// OUT AND CLEAR
-		digitalWrite(ioslot->data.discrete_output.pin, state->data.discrete_output.value);
+		digitalWrite(ioslot->data.discrete_output.pin, output);
 		state->data.discrete_output.count = 0;
 	}
 }
@@ -355,6 +356,14 @@ static bool prepare_discrete_output(struct abstract_ioslot_state *state, struct 
 	state->data.discrete_output.value = 0;
 	
 	pinMode(ioslot->data.discrete_output.pin, OUTPUT);
+	if (!ioslot->data.discrete_output.inverse)
+	{
+		digitalWrite(ioslot->data.discrete_output.pin, OFF);
+	}
+	else
+	{
+		digitalWrite(ioslot->data.discrete_output.pin, ON);
+	}
 
 	return true;
 }
