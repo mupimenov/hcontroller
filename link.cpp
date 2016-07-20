@@ -54,6 +54,7 @@ static const struct modbus_regs_table holding_tables[] = {
 
 static struct common_coil_bit {
 	uint8_t restart_programs;
+	uint8_t pause_flag;
 } 									controls;
 
 static const struct modbus_bits_table coil_tables[] = {
@@ -122,6 +123,15 @@ static int modbus_after_write_table(struct modbus_instance *instance, enum modbu
 				controls.restart_programs = 0x00;
 				
 				program_reset();
+			}
+		}
+
+		offset = ELEMENT_OFFSET(controls, pause_flag);
+		if (ELEMENT_IN(0x0000, offset, address, count))
+		{
+			if (controls.pause_flag == 0x01)
+			{
+				config_set_pause_flag(controls.pause_flag);
 			}
 		}
 	}
@@ -247,6 +257,8 @@ static void update_inputs(void)
 	common_values.now = datetime_now();
 	common_values.uptime = millis();
 	common_values.modbus_address = config_get_address();
+
+	controls.pause_flag = config_get_pause_flag();
 }
 
 void link(void)

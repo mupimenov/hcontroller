@@ -28,11 +28,14 @@ static void update_common_values(void)
 
 void prog_loop(void)
 {
-	update_common_values();
+	if (!config_get_pause_flag())
+	{
+		update_common_values();
 
-	io_execute_in();
-	program_execute();
-	io_execute_out();
+		io_execute_in();
+		program_execute();
+		io_execute_out();
+	}
 
 	OS::sleep(PROG_LOOP_PERIOD_MS);
 }

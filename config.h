@@ -267,6 +267,9 @@ void config_write(uint16_t address, const uint8_t *data, uint16_t size);
 void config_set_address(uint8_t address);
 uint8_t config_get_address(void);
 
+void config_set_pause_flag(uint8_t pause);
+uint8_t config_get_pause_flag(void);
+
 #ifdef __cplusplus
 }
 #endif

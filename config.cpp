@@ -9,6 +9,7 @@
 #define ADDRESS_ADDRESS 0xFFF
 
 static OS::TMutex 		mutex;
+static uint8_t 			pause_flag = 0;
 
 void config_init(void)
 {
@@ -395,4 +396,14 @@ void config_set_address(uint8_t address)
 uint8_t config_get_address(void)
 {
 	return EEPROM.read(ADDRESS_ADDRESS);
+}
+
+void config_set_pause_flag(uint8_t pause)
+{
+	pause_flag = pause;
+}
+
+uint8_t config_get_pause_flag(void)
+{
+	return pause_flag;
 }
