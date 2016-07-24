@@ -6,9 +6,9 @@
 static void led()
 {
 	OS::sleep(100);
-	digitalWrite(13, HIGH);
+	digitalWrite(LED_BUILTIN, HIGH);
 	OS::sleep(100);
-	digitalWrite(13, LOW);
+	digitalWrite(LED_BUILTIN, LOW);
 }
 
 scmRTOS_PROCESS(0, 128, led);
@@ -17,7 +17,7 @@ scmRTOS_PROCESS(2, 512, prog_loop);
 
 void setup()
 {
-	pinMode(13, OUTPUT);
+	pinMode(LED_BUILTIN, OUTPUT);
 
 	// 1 тик = 10 мс
 	TCCR1A = 0;

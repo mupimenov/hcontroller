@@ -836,7 +836,15 @@ static void io_prepare(void)
 {
 	if (need_prepare)
 	{
-		uint8_t i;	
+		uint8_t i;
+
+		for (i = 0; i < NUM_DIGITAL_PINS; ++i)
+		{
+			if (i == 0 || i == 1
+					|| i == SDA || i == SCL)
+				continue;
+			pinMode(i, INPUT);
+		}
 		
 		for (i = 0; i < IOSLOTS_COUNT; ++i)
 		{
