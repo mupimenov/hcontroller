@@ -841,7 +841,8 @@ static void io_prepare(void)
 		for (i = 0; i < NUM_DIGITAL_PINS; ++i)
 		{
 			if (i == 0 || i == 1
-					|| i == SDA || i == SCL)
+					|| i == SDA || i == SCL
+					|| i == LED_BUILTIN)
 				continue;
 			pinMode(i, INPUT);
 		}
