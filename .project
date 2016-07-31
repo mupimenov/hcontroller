@@ -32,14 +32,14 @@
 			<locationURI>ArduinoPrivateLibPath/DHT-sensor-library-master</locationURI>
 		</link>
 		<link>
+			<name>Libraries/DigitalIO</name>
+			<type>2</type>
+			<locationURI>ArduinoPrivateLibPath/DigitalIO</locationURI>
+		</link>
+		<link>
 			<name>Libraries/EEPROM</name>
 			<type>2</type>
 			<locationURI>ArduinoHardwareLibPath/EEPROM</locationURI>
-		</link>
-		<link>
-			<name>Libraries/I2cMaster</name>
-			<type>2</type>
-			<locationURI>ArduinoPrivateLibPath/I2cMaster</locationURI>
 		</link>
 		<link>
 			<name>Libraries/Modbus</name>

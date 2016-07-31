@@ -121,18 +121,17 @@ static int modbus_after_write_table(struct modbus_instance *instance, enum modbu
 			if (controls.restart_programs == 0x01)
 			{
 				controls.restart_programs = 0x00;
+				controls.pause_flag = 0x00;
 				
 				program_reset();
+				config_set_pause_flag(controls.pause_flag);
 			}
 		}
 
 		offset = ELEMENT_OFFSET(controls, pause_flag);
 		if (ELEMENT_IN(0x0000, offset, address, count))
 		{
-			if (controls.pause_flag == 0x01)
-			{
-				config_set_pause_flag(controls.pause_flag);
-			}
+			config_set_pause_flag(controls.pause_flag);
 		}
 	}
 

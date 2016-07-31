@@ -719,7 +719,7 @@ static void sht2x_io_analog(struct abstract_ioslot_state *state, uint8_t mode, f
 {
 	if (mode == IN)
 	{
-		*value = state->data.mh_z19.value;
+		*value = state->data.sht2x.value;
 	}
 }
 
@@ -765,7 +765,7 @@ static void get_sht2x_values(void)
 				if (now > last_millis + sht2x_period
 					|| now < last_millis)
 				{
-					SHT2xClass sht2x(ioslot_state[i].data.sht2x.sda_pin, ioslot_state[i].data.sht2x.scl_pin);
+					SHT2xClass sht2x(ioslot_state[i].data.sht2x.scl_pin, ioslot_state[i].data.sht2x.sda_pin);
 					float data;
 					if (ioslot_state[i].data.sht2x.parameter == SHT2X_TEMPERATURE)
 						data = sht2x.GetTemperature();

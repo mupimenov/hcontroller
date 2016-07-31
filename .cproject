@@ -30,8 +30,9 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/hydra/Libraries/Wire}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/hydra/Libraries/Wire/utility}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/hydra/Libraries/SoftwareSerial}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/hydra/Libraries/I2cMaster}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/hydra/Libraries/SHT2x-Arduino-Library-master}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/hydra/Libraries/DigitalIO}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/hydra/Libraries/DigitalIO/src}&quot;"/>
 								</option>
 								<inputType id="it.baeyens.arduino.compiler.cpp.sketch.input.1890141697" name="CPP source files" superClass="it.baeyens.arduino.compiler.cpp.sketch.input"/>
 							</tool>
@@ -48,8 +49,9 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/hydra/Libraries/Wire}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/hydra/Libraries/Wire/utility}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/hydra/Libraries/SoftwareSerial}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/hydra/Libraries/I2cMaster}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/hydra/Libraries/SHT2x-Arduino-Library-master}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/hydra/Libraries/DigitalIO}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/hydra/Libraries/DigitalIO/src}&quot;"/>
 								</option>
 								<inputType id="it.baeyens.arduino.compiler.c.sketch.input.2026321273" name="C Source Files" superClass="it.baeyens.arduino.compiler.c.sketch.input"/>
 							</tool>

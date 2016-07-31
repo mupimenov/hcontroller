@@ -31,7 +31,7 @@
 #define SHT2X_H
 
 #include <inttypes.h>
-#include <I2cMaster.h>
+#include <SoftI2cMaster.h>
 
 typedef enum {
     eSHT2xAddress = 0x80,
@@ -47,7 +47,7 @@ typedef enum {
 class SHT2xClass
 {
 public:
-	SHT2xClass(uint8_t sdaPin, uint8_t sclPin);
+	SHT2xClass(uint8_t sclPin, uint8_t sdaPin);
 
     float GetHumidity(void);
     float GetTemperature(void);
